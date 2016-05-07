@@ -21,6 +21,11 @@ void emit(const T& event) const {
     notify(event);
 }
 
+template<class U>
+static  std::function<void(const T&)> use_member(void (U::* member) (const T&), U* calle) {
+    return std::bind(member, calle, std::placeholders::_1);
+}
+
 private:
 
 static std::vector<std::function<void(const T&)>> listeners;

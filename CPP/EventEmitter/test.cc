@@ -3,7 +3,8 @@
 #include <functional>
 #include <future>
 #include <random>
-#include <algorithm>
+#include <chrono>
+#include <thread>
 
 class SwitchEvent {
 
@@ -43,8 +44,9 @@ class Controller {
 public:
 
 Controller() {
-    const pattern::EventEmitter<SwitchEvent> listner;
-    listner.subscribe(std::move(std::bind(&Controller::track, this, std::placeholders::_1)));
+    typedef pattern::EventEmitter<SwitchEvent> Emitter;
+    const Emitter listner;
+    listner.subscribe(std::move(Emitter::use_member(&Controller::track, this)));
 }
 
 private:
@@ -53,8 +55,8 @@ int _count = 0;
 
 void track(const SwitchEvent& event) {
     if(event.get_state()) {
-        this->_count++;
-        std::cout << "count: " << this->_count << std::endl;
+        _count++;
+        std::cout << "count: " << _count << std::endl;
     }
 }
 
@@ -64,13 +66,16 @@ int main(void) {
     Controller ctrl;
     View v {false};
     std::random_device rnd_dev;
-	std::mt19937 generator(rnd_dev());
-    v.togle();
-    v.togle();
-    v.togle();
-    /*std::async(std::launch::async, [v]() {
-
-    });*/
+    std::mt19937 gen(rnd_dev());
+    int times = ((gen() % 5) + 2) * 3;
+    for(int i = 0; i < times * 5; ++i) {
+        std::async(std::launch::async, [&v, times] {
+            for(int k = 0; k < times / 2; ++k) {
+                v.togle();
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+        });
+    }
 
     return 0;
 }
